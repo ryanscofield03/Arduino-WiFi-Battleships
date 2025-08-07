@@ -1,4 +1,4 @@
-int switch_val = 0;
+int switch_val = 0; // comment for testing
 
 void setup() {
   Serial.begin(9600);
