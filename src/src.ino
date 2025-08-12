@@ -1,17 +1,21 @@
-int switch_val = 0; // comment for testing
+#include <Adafruit_NeoPixel.h>
+
+#define PIN 2
+#define NUMPIXELS 64
+
+Adafruit_NeoPixel strip(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
-  Serial.begin(9600);
-  pinMode(12, OUTPUT);
+  strip.begin();
+  strip.setBrightness(20);
+  strip.show();
 }
 
-void loop() {
-  switch_val = digitalRead(A0);
 
-  if (switch_val == 0) {
-    digitalWrite(12,LOW);
+void loop() {
+  for (int i = 0; i < NUMPIXELS; i++) {
+    strip.setPixelColor(i, strip.Color(255, 255, 255));
   }
-  else if (switch_val == 1) {
-    digitalWrite(12,HIGH);
-  }
+  strip.show();
+  delay(500);
 }
