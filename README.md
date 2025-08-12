@@ -3,7 +3,6 @@ Repository for storing arduino code for running the Arduino WiFi Battleships pro
 
 TODO:
 - work out how to use buttons and wire them through breadboard (may also need more breadboards for this, or some alternative)
-- work out how to control 8x8 LED RGB grid (likely some library for this)
 - work out how to communicate between boards over WiFi
 
 - after the above, basically everything has been covered and development can start.
