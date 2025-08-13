@@ -1,21 +1,25 @@
-#include <Adafruit_NeoPixel.h>
+#define BUTTON 2
 
-#define PIN 2
-#define NUMPIXELS 64
+// note to self:
+// to setup, connect one button pin to ground and other button pin to pin 2
+// both button pins should be on the same side of the bread board, with the
+// button going over the center gap
 
-Adafruit_NeoPixel strip(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+bool toggle = false;
+bool lastButtonState = HIGH;
 
 void setup() {
-  strip.begin();
-  strip.setBrightness(20);
-  strip.show();
+  pinMode(BUTTON, INPUT_PULLUP);
+  Serial.begin(9600);
 }
 
 
 void loop() {
-  for (int i = 0; i < NUMPIXELS; i++) {
-    strip.setPixelColor(i, strip.Color(255, 255, 255));
+  int buttonState = digitalRead(BUTTON);
+  if (buttonState == LOW && lastButtonState == HIGH) {
+        toggle = !toggle;
   }
-  strip.show();
-  delay(500);
+  Serial.println(toggle);
+
+  lastButtonState = buttonState;
 }
