@@ -9,17 +9,18 @@ bool toggle = false;
 bool lastButtonState = HIGH;
 
 void setup() {
-  pinMode(BUTTON, INPUT_PULLUP);
-  Serial.begin(9600);
+     pinMode(BUTTON, INPUT_PULLUP);
+     Serial.begin(9600);
+     delay(1000);
 }
 
 
 void loop() {
-  int buttonState = digitalRead(BUTTON);
-  if (buttonState == LOW && lastButtonState == HIGH) {
+     int buttonState = digitalRead(BUTTON);
+     if (buttonState == LOW && lastButtonState == HIGH) {
         toggle = !toggle;
-  }
-  Serial.println(toggle);
+    }
+    Serial.println(toggle);
 
-  lastButtonState = buttonState;
+    lastButtonState = buttonState;
 }

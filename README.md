@@ -1,6 +1,35 @@
 # Arduino-WiFi-Battleships
 Repository for storing arduino code for running the Arduino WiFi Battleships project, and instructions for recreating the hardware.
 
+## Setup
+### Run the following commands for the arduino-cli:
+
+```
+    arduino-cli core update-index
+    arduino-cli core install arduino:megaavr
+    arduino-cli lib install "Adafruit NeoPixel"
+```
+
+## Running a sketch
+### Use the following command to find your board's port and FQBN:
+
+```
+    arduino-cli board list
+```
+
+### Compile and upload the sketch to your board with:
+
+```
+    arduino-cli compile --fqbn <your boards FQBN here> <directory name containing .ino file>
+    arduino-cli upload -p <your board's port here> --fqbn <your board's FQBN here> <directory name containing .ino file>
+```
+
+### For monitoring the board, use the command: 
+
+```
+    arduino-cli monitor -p <your board's port here> -b <your board's FQBN here>
+```
+
 TODO:
 - work out how to use buttons and wire them through breadboard (may also need more breadboards for this, or some alternative)
 - work out how to communicate between boards over WiFi
