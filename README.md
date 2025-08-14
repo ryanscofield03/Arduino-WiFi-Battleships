@@ -43,4 +43,4 @@ TODO:
       - shoot ships: need to allow for movement and shooting - could allow for special shots (e.g., each player gets a single 2x2 and a full row/column shot per game)
       - end screen: simple green or red display depending on the outcome is probably fine here, can't really do anything complex with an 8x8 grid
 
-- write down description of hardware/compontents and their wiring
+- write down description of hardware/components and their wiring
