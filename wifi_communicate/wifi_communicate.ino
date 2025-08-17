@@ -6,7 +6,7 @@
 
 WiFiUDP udp;
 unsigned int DISCOVERY_PORT = 12345;
-unsigned int MESSAGE_PORT = 12345;
+unsigned int MESSAGE_PORT = 12346;
 IPAddress otherIp;
 bool otherDiscovered = false;
 
