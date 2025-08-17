@@ -3,20 +3,35 @@ import socket
 HOST = "0.0.0.0"
 PORT = 5006
 
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-sock.bind((HOST, PORT))
+server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server.bind((HOST, PORT))
+server.listen(2)
 
 clients = []
 
-print("Server running on", HOST, PORT)
+print(f"server started on {HOST}:{PORT}")
 
 while True:
-    data, addr = sock.recvfrom(1024)
-    print(f"Received {data} from {addr}")
+    conn, addr = server.accept()
+    clients.append(conn)
+    print(f"client {addr} connected")
 
-    if addr not in clients:
-        clients.append(addr)
+    # TODO we will want to create pairs of players who send "READY" messages
+    #  and then have a state for their game stored in RAM - could even record history, store this in a DB, and then
+    #  present this to the user afterwards + a scoreboard
 
-    for client in clients:
-        if client != addr:
-            sock.sendto(data, client)
+    # TODO after creating pairs, hold state of game (current state (placing ships,
+    #  shooting ships (and whose turn it is), and end screen / score))
+
+    try:
+        for client in clients:
+            data = client.recv(1024)
+            if not data:
+                clients.remove(client)
+                continue
+            else:
+                for other in clients:
+                    if other != client:
+                        other.sendall(data.encode())
+    except ConnectionResetError:
+        clients.remove(client)

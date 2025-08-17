@@ -4,14 +4,9 @@
 
 #include "WiFiInformation.h"
 
-WiFiUDP udp;
-IPAddress SERVER_IP(192, 168, 1, 125);
+WiFiClient client;
+IPAddress SERVER_IP(192, 168, 1, 125); // local IP of server
 unsigned int SERVER_PORT = 5006;
-IPAddress otherIp;
-bool otherDiscovered = false;
-
-const int PIN_BUTTON = 2;
-bool lastButtonState = HIGH;
 
 void setup() {
 	Serial.begin(9600);
@@ -21,21 +16,26 @@ void setup() {
   	while (WiFi.status() != WL_CONNECTED) {
     	delay(1000);
   	}
-  	udp.begin(SERVER_PORT);
+
+	if (client.connect(SERVER_IP, SERVER_PORT)) {
+		Serial.println("connected");
+	}
 }
 
 void loop() {
-  	udp.beginPacket(SERVER_IP, SERVER_PORT);
-  	udp.write("READY");
-  	udp.endPacket();
+	if (!client.connected()) {
+    	Serial.println("reconnecting");
+    	client.stop();
+    	while (!client.connect(SERVER_IP, SERVER_PORT)) {
+        	delay(1000);
+    	}
+	}
 
-  	int packetSize = udp.parsePacket();
-  	if (packetSize) {
-    	char buffer[255];
-    	int len = udp.read(buffer, 255);
-    	buffer[len] = '\0';
-    	Serial.println(buffer);
+  	client.println("READY");
+
+  	if (client.available()) {
+    	String msg = client.readStringUntil('\n');
+    	Serial.println(msg);
   	}
-
-  	delay(2000);
+	delay(1000);
 }
