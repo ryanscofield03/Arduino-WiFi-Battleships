@@ -8,6 +8,7 @@ Repository for storing arduino code for running the Arduino WiFi Battleships pro
     arduino-cli core update-index
     arduino-cli core install arduino:megaavr
     arduino-cli lib install "Adafruit NeoPixel"
+    arduino-cli lib install "WiFiNINA"
 ```
 
 ## Running a sketch

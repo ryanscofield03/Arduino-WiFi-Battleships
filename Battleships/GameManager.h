@@ -1,0 +1,14 @@
+//
+// Created by Ryan on 17/08/2025.
+//
+
+#ifndef ARDUINO_WIFI_BATTLESHIPS_GAMEMANAGER_H
+#define ARDUINO_WIFI_BATTLESHIPS_GAMEMANAGER_H
+
+
+class GameManager
+{
+};
+
+
+#endif //ARDUINO_WIFI_BATTLESHIPS_GAMEMANAGER_H
