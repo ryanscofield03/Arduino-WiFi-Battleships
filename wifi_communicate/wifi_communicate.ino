@@ -45,6 +45,24 @@ void loop() {
 		if (now - lastSentAt >= 250) {
 			lastSentAt = now;
   			client.print("READY");
+
+			// messages
+
+			// start game message
+			// 1 byte - 1 byte for message type (shouldn't need data)
+
+			// ready message (e.g., when you have placed all of your ships)
+			// 1 byte - 1 byte for message type (shouldn't need data)
+
+			// hit or miss message
+			// 2 bytes - 1 byte for message type, and 1 byte for true/false (could be 1 byte total, but easier to give message type a byte)
+
+			// shoot message (e.g., I shoot at (3,4) using my 2x2 or 1x1 shot)
+			// 3-4 bytes - 1 for message type, 1-2 for x, y coordinates (depends if we do index based, or one-hot), 1 byte for the shoot type
+
+			// grid + coordinate (e.g., the state of your board, for 'streaming' it to the other player)
+			// 10-11 bytes - 1 for message type, 8 for 64 true/false values (true if I have shot at that position on the board), 1-2 bytes for coordinate
+			// alternatively send 2 grid and coordinate as separate messages, but probably easier to pair them
 		}
 	}
 
