@@ -23,12 +23,17 @@ Repository for storing arduino code for running the Arduino WiFi Battleships pro
 ```
     arduino-cli compile --fqbn <your boards FQBN here> <directory name containing .ino file>
     arduino-cli upload -p <your board's port here> --fqbn <your board's FQBN here> <directory name containing .ino file>
+    
+    arduino-cli compile --fqbn arduino:megaavr:uno2018 ./
+    arduino-cli upload -p COM7 --fqbn arduino:megaavr:uno2018 ./
 ```
 
 ### For monitoring the board, use the command: 
 
 ```
     arduino-cli monitor -p <your board's port here> -b <your board's FQBN here>
+    
+    arduino-cli monitor -p COM7 -b arduino:megaavr:uno2018
 ```
 
 TODO:
