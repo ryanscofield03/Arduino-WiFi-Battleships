@@ -117,7 +117,7 @@ void loop() {
     int playerIndex = playerPosition.to_index();
     for (int i = 0; i < NUMPIXELS; i++) {
         if (i == playerIndex) {
-            strip.setPixelColor(i, strip.Color(255, 255, 255));
+            strip.setPixelColor(i, strip.Color(255, 19, 159));
         } else {
             strip.setPixelColor(i, strip.Color(0, 0, 0));
         }
