@@ -107,6 +107,7 @@ enum Direction {
 
 struct BoardPosition {
     private:
+        int startX, startY;
         int x;
         int y;
 
@@ -116,6 +117,8 @@ struct BoardPosition {
         };
     public:
         BoardPosition(int startX = 3, int startY = 4) {
+            this->startX = startX;
+            this->startY = startY;
             x = startX;
             y = startY;
         };
@@ -131,6 +134,11 @@ struct BoardPosition {
                 moveWithinBounds(y, 1);
             }
         };
+
+        void to_center() {
+            x = startX;
+            y = startY;
+        }
 
         void print() {
             Serial.print("{ x: ");
@@ -156,6 +164,7 @@ struct GameContext {
     bool canTransitionFlag = false;
     BoardPosition position;
     BoardPosition shipPlacements[4];
+	bool selectedShips[4][3][3];
     Adafruit_NeoPixel& screen;
 
     GameContext(Adafruit_NeoPixel& screen) : screen(screen) {}
@@ -195,9 +204,8 @@ class StartGameState: public GameState {
         StartGameState(GameContext& context) : GameState(context) {}
 
         void Draw() override {
-            Serial.println("Drawing StartGameState");
             for (int i = 0; i < NUMPIXELS; i++) {
-                context.screen.setPixelColor(i, context.screen.Color(255, 19, 159));
+                context.screen.setPixelColor(i, context.screen.Color(20, 20, 20, 1));
             }
             context.screen.show();
         }
@@ -216,13 +224,99 @@ class StartGameState: public GameState {
 };
 
 class PlacingShipsState: public GameState {
+    private:
+        int currentShipIndex;
+        int rotation;
+        bool currentShip[3][3];
+
     public:
-        PlacingShipsState(GameContext& context) : GameState(context) {}
+        PlacingShipsState(GameContext& context) : GameState(context) {
+            currentShipIndex = 0;
+            rotation = 0;
+            UpdateCurrentShip();
+        }
+
+        void UpdateCurrentShip() {
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    currentShip[i][j] = ships[currentShipIndex][rotation][i][j];
+                }
+            }
+        }
+
+        void DrawRelativeShip(bool ship[3][3], int shipX, int shipY, int r, int g, int b) {
+            for (int i = 0; i < 3; i++) {
+                for (int j = 0; j < 3; j++) {
+                    if (ship[j][i]) {
+                        int relativeX = shipX + i - 1;
+                        int relativeY = shipY + j - 1;
+
+                        if (relativeX >= 0 && relativeX < 8 && relativeY >= 0 && relativeY < 8) {
+                            int pixelIndex = relativeY * 8 + relativeX;
+                            context.screen.setPixelColor(pixelIndex, context.screen.Color(r, g, b));
+                        }
+                    }
+                }
+            }
+        }
 
         void Draw() override {
-            Serial.println("Drawing PlacingShipsState");
             for (int i = 0; i < NUMPIXELS; i++) {
-                context.screen.setPixelColor(i, context.screen.Color(50, 100, 150));
+                context.screen.setPixelColor(i, context.screen.Color(0, 0, 0));
+            }
+
+            for (int s = 0; s < 4; s++) {
+                int shipX = context.shipPlacements[s].to_index() % 8;
+                int shipY = context.shipPlacements[s].to_index() / 8;
+                DrawRelativeShip(context.selectedShips[s], shipX, shipY, 20, 20, 255);
+            }
+
+            int posX = context.position.to_index() % 8;
+            int posY = context.position.to_index() / 8;
+            DrawRelativeShip(currentShip, posX, posY, 255, 255, 255);
+
+            // TODO - make pixel RED if there is overlap (e.g., does not allow placement)
+
+            context.screen.show();
+        }
+
+        void HandleRotate() override {
+            rotation = (rotation + 1) % 4;
+            UpdateCurrentShip();
+        }
+
+        void HandleAction() override {
+            if (currentShipIndex < 3) {
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        context.selectedShips[currentShipIndex][i][j] = currentShip[i][j];
+                    }
+                }
+                context.shipPlacements[currentShipIndex] = context.position;
+                currentShipIndex++;
+                UpdateCurrentShip();
+                context.position.to_center();
+            } else {
+                context.canTransitionFlag = true;
+            }
+        }
+
+        StateType Type() override {
+            return StateType::PlaceShips;
+        }
+};
+
+class ShootingShipsState: public GameState {
+    private:
+        BoardPosition hitPlacements[64];
+        bool myTurn;
+        int shootSize;
+    public:
+        ShootingShipsState(GameContext& context) : GameState(context) {}
+
+        void Draw() override {
+            for (int i = 0; i < NUMPIXELS; i++) {
+                context.screen.setPixelColor(i, context.screen.Color(20, 20, 20, 1));
             }
             context.screen.show();
         }
@@ -236,15 +330,8 @@ class PlacingShipsState: public GameState {
         }
 
         StateType Type() override {
-            return StateType::PlaceShips;
+            return StateType::ShootShips;
         }
-};
-
-class ShootingShipsState: public GameState {
-    private:
-        BoardPosition hitPlacements[64];
-        bool myTurn;
-        int shootSize;
 };
 
 class Game {
@@ -270,27 +357,21 @@ class Game {
 
             if (leftPressed) {
                 Serial.println("Left pressed");
-                delay(250);
                 currentState->HandleLeft();
             } else if (upPressed) {
                 Serial.println("Up pressed");
-                delay(250);
                 currentState->HandleUp();
             } else if (downPressed) {
                 Serial.println("Down pressed");
-                delay(250);
                 currentState->HandleDown();
             } else if (rightPressed) {
                 Serial.println("Right pressed");
-                delay(250);
                 currentState->HandleRight();
             } else if (rotatePressed) {
                 Serial.println("Rotate pressed");
-                delay(250);
                 currentState->HandleRotate();
             } else if (actionPressed) {
                 Serial.println("Action pressed");
-                delay(250);
                 currentState->HandleAction();
             }
 
@@ -302,10 +383,14 @@ class Game {
                         SetState(new PlacingShipsState(context));
                         context.canTransitionFlag = false;
                         break;
+                    case StateType::PlaceShips:
+                        SetState(new ShootingShipsState(context));
+                        context.canTransitionFlag = false;
+                        break;
                 }
             }
 
-            delay(250);
+            delay(100);
         }
 
         ~Game() {
