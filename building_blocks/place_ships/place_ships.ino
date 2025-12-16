@@ -101,22 +101,28 @@ bool ships[4][4][3][3] = {
     }
 };
 
+struct Coordinate {
+    public:
+        uint8_t x;
+        uint8_t y;
+};
+
 enum Direction {
     LEFT, RIGHT, UP, DOWN
 };
 
 struct BoardPosition {
     private:
-        int startX, startY;
-        int x;
-        int y;
+        uint8_t startX, startY;
+        uint8_t x;
+        uint8_t y;
 
-        void moveWithinBounds(int &pos, int direction) {
+        void moveWithinBounds(uint8_t &pos, uint8_t direction) {
             pos += direction;
             pos = constrain(pos, 0, 7);
         };
     public:
-        BoardPosition(int startX = 3, int startY = 4) {
+        BoardPosition(uint8_t startX = 3, uint8_t startY = 4) {
             this->startX = startX;
             this->startY = startY;
             x = startX;
@@ -148,7 +154,7 @@ struct BoardPosition {
             Serial.println(" }");
         };
 
-        int to_index() {
+        uint8_t to_index() {
             return (8 * y) + x;
         };
 };
@@ -204,7 +210,7 @@ class StartGameState: public GameState {
         StartGameState(GameContext& context) : GameState(context) {}
 
         void Draw() override {
-            for (int i = 0; i < NUMPIXELS; i++) {
+            for (uint8_t i = 0; i < NUMPIXELS; i++) {
                 context.screen.setPixelColor(i, context.screen.Color(20, 20, 20, 1));
             }
             context.screen.show();
@@ -225,8 +231,8 @@ class StartGameState: public GameState {
 
 class PlacingShipsState: public GameState {
     private:
-        int currentShipIndex;
-        int rotation;
+        uint8_t currentShipIndex;
+        uint8_t rotation;
         bool currentShip[3][3];
 
     public:
@@ -237,22 +243,24 @@ class PlacingShipsState: public GameState {
         }
 
         void UpdateCurrentShip() {
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    currentShip[i][j] = ships[currentShipIndex][rotation][i][j];
+            for (uint8_t y = 0; y < 3; y++) {
+                for (uint8_t x = 0; x < 3; x++) {
+                    currentShip[y][x] = ships[currentShipIndex][rotation][y][x];
                 }
             }
         }
 
-        void DrawRelativeShip(bool ship[3][3], int shipX, int shipY, int r, int g, int b) {
-            for (int i = 0; i < 3; i++) {
-                for (int j = 0; j < 3; j++) {
-                    if (ship[j][i]) {
-                        int relativeX = shipX + i - 1;
-                        int relativeY = shipY + j - 1;
+        void DrawRelativeShip(bool ship[3][3], BoardPosition position, uint8_t r, uint8_t g, uint8_t b) {
+            uint8_t shipX = position.to_index() % 8;
+            uint8_t shipY = position.to_index() / 8; 
+            for (uint8_t y = 0; y < 3; y++) {
+                for (uint8_t x = 0; x < 3; x++) {
+                    if (ship[y][x]) {
+                        uint8_t px = shipX + x - 1;
+                        uint8_t py = shipY + y - 1;
 
-                        if (relativeX >= 0 && relativeX < 8 && relativeY >= 0 && relativeY < 8) {
-                            int pixelIndex = relativeY * 8 + relativeX;
+                        if (px >= 0 && px < 8 && py >= 0 && py < 8) {
+                            uint8_t pixelIndex = py * 8 + px;
                             context.screen.setPixelColor(pixelIndex, context.screen.Color(r, g, b));
                         }
                     }
@@ -260,22 +268,77 @@ class PlacingShipsState: public GameState {
             }
         }
 
+        uint8_t GetCoordinatesFromPosition(bool ship[3][3], BoardPosition position, Coordinate outCoords[9]) {
+            uint8_t x = position.to_index() % 8;
+            uint8_t y = position.to_index() / 8;
+            uint8_t count = 0;
+            for (uint8_t y = 0; y < 3; y++) {
+                for (uint8_t x = 0; x < 3; x++) {
+                    if (ship[y][x]) {
+                        outCoords[count++] = {shipX + x - 1, shipY + y - 1};
+                    }
+                }
+            }
+            return count;
+        }
+
         void Draw() override {
-            for (int i = 0; i < NUMPIXELS; i++) {
+            // Clear the screen
+            for (uint8_t i = 0; i < NUMPIXELS; i++) {
                 context.screen.setPixelColor(i, context.screen.Color(0, 0, 0));
             }
 
-            for (int s = 0; s < 4; s++) {
-                int shipX = context.shipPlacements[s].to_index() % 8;
-                int shipY = context.shipPlacements[s].to_index() / 8;
-                DrawRelativeShip(context.selectedShips[s], shipX, shipY, 20, 20, 255);
+            // Draw currently placed ships
+            bool occupied[8][8] = {};
+            for (uint8_t s = 0; s < 4; s++) {
+                // Build up a list of coordinates that are already used
+                Coordinate shipCoords[9];
+                uint8_t count = GetCoordinatesFromPosition(
+                    context.selectedShips[s], 
+                    context.shipPlacements[s],
+                    shipCoords
+                );
+                for (uint8_t i = 0; i < count; i++) {
+                    if (shipCoords[i].x >= 0 && shipCoords[i].x < 8 && shipCoords[i].y >= 0 && shipCoords[i].y < 8)
+                        occupied[shipCoords[i].y][shipCoords[i].x] = true;
+                }
+
+                DrawRelativeShip(
+                    context.selectedShips[s], 
+                    context.shipPlacements[s], 
+                    20, 
+                    20, 
+                    255
+                );
             }
 
-            int posX = context.position.to_index() % 8;
-            int posY = context.position.to_index() / 8;
-            DrawRelativeShip(currentShip, posX, posY, 255, 255, 255);
+            // Build a list of current coordinates
+            Coordinate currentCoords[9];
+            uint8_t currentCount = GetCoordinatesFromPosition(
+                currentShip, 
+                context.position,
+                currentCoords
+            );
 
-            // TODO - make pixel RED if there is overlap (e.g., does not allow placement)
+            // Determine if there is overlap between current ship and placed ships
+            bool overlap = false;
+            for (uint8_t i = 0; i < currentCount; i++) {
+                if (currentCoords[i].x >= 0 && currentCoords[i].x < 8 &&
+                    currentCoords[i].y >= 0 && currentCoords[i].y < 8 &&
+                    occupied[currentCoords[i].y][currentCoords[i].x]) {
+                    overlap = true;
+                    break;
+                }
+            }
+
+            // Draw current ship (white if no overlap, red if overlap)
+            DrawRelativeShip(
+                currentShip, 
+                context.position, 
+                255, 
+                overlap ? 0 : 255, 
+                overlap ? 0 : 255
+            );
 
             context.screen.show();
         }
@@ -286,18 +349,23 @@ class PlacingShipsState: public GameState {
         }
 
         void HandleAction() override {
-            if (currentShipIndex < 3) {
-                for (int i = 0; i < 3; i++) {
-                    for (int j = 0; j < 3; j++) {
-                        context.selectedShips[currentShipIndex][i][j] = currentShip[i][j];
+            if (currentShipIndex < 4) {
+                // Check that the entire ship is inbounds and not overlapping with another ship
+
+                for (uint8_t y = 0; y < 3; y++) {
+                    for (uint8_t x = 0; x < 3; x++) {
+                        context.selectedShips[currentShipIndex][y][x] = currentShip[y][x];
                     }
                 }
                 context.shipPlacements[currentShipIndex] = context.position;
                 currentShipIndex++;
-                UpdateCurrentShip();
-                context.position.to_center();
-            } else {
-                context.canTransitionFlag = true;
+
+                if (currentShipIndex < 4) {
+                    UpdateCurrentShip();
+                    context.position.to_center();
+                } else {
+                    context.canTransitionFlag = true;
+                }
             }
         }
 
@@ -310,12 +378,12 @@ class ShootingShipsState: public GameState {
     private:
         BoardPosition hitPlacements[64];
         bool myTurn;
-        int shootSize;
+        uint8_t shootSize;
     public:
         ShootingShipsState(GameContext& context) : GameState(context) {}
 
         void Draw() override {
-            for (int i = 0; i < NUMPIXELS; i++) {
+            for (uint8_t i = 0; i < NUMPIXELS; i++) {
                 context.screen.setPixelColor(i, context.screen.Color(20, 20, 20, 1));
             }
             context.screen.show();
@@ -349,11 +417,11 @@ class Game {
 
         void Update() {
             bool leftPressed = digitalRead(LEFT_PIN) == LOW;
-            int upPressed = digitalRead(UP_PIN) == LOW;
-            int downPressed = digitalRead(DOWN_PIN) == LOW;
-            int rightPressed = digitalRead(RIGHT_PIN) == LOW;
-            int rotatePressed = digitalRead(ROTATE_PIN) == LOW;
-            int actionPressed = digitalRead(ACTION_PIN) == LOW;
+            uint8_t upPressed = digitalRead(UP_PIN) == LOW;
+            uint8_t downPressed = digitalRead(DOWN_PIN) == LOW;
+            uint8_t rightPressed = digitalRead(RIGHT_PIN) == LOW;
+            uint8_t rotatePressed = digitalRead(ROTATE_PIN) == LOW;
+            uint8_t actionPressed = digitalRead(ACTION_PIN) == LOW;
 
             if (leftPressed) {
                 Serial.println("Left pressed");
